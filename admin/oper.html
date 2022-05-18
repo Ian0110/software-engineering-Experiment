@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link href="https://cdn.bootcss.com/limonte-sweetalert2/6.6.2/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+</head>
+
+<body>
+    <div class="nav">
+        <span class="title">班级管理系统</span>
+        <a href="home.html">首页</a>
+        <a href="oper.html">上传</a>
+        <a href="../login.html">注销</a>
+    </div>
+    <div class="t">
+        <h1>文件上传</h1>
+    </div>
+    <section>
+        <div class="container">
+            <div class="form">
+                <div class="inputBox">
+                    <label for="fileToUpload" style="font-size: 20px;font-weight:bold;">Select a File to Upload</label>
+                    <input type="file" name="fileToUpload" id="fileToUpload" onchange="fileSelected(); " />
+                </div>
+                <div id="fileName"></div>
+                <div id="fileSize"></div>
+                <div id="fileType"></div>
+                <div class="inputBox">
+                    <select id="select">
+                    </select>
+                </div>
+                <div class="inputBox">
+                    <input type="button" onclick="postData()" value="Upload" />
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="find">
+        <input type="text" id="newtype" placeholder="新文件类型">
+        <button type="button" id="create">创建类型</button>
+    </div>
+</body>
+
+<script src="https://code.jquery.com/jquery-3.4.1.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript">
+    // 添加功能：
+    // 1.文件上传后，输出上传成功弹窗
+    // 2.文件上传界面，文件类型为下拉菜单，从后端接收所有类别，并显示
+
+
+    window.onload = function () {
+        //拦截器
+        var id = sessionStorage.getItem("id");
+        if (id == null || id == "") {
+            alert("未登录，请先返回登陆界面！");
+            window.location.href = "../login.html";
+        }
+        $.ajax({
+            type: "get", //请求方式（带参）
+            url: "http://localhost:80/files/GetAllCategory", //请求地址
+            data: { //请求对象，json数据
+                //如果没有参数，则不需要设置
+            },
+            dataType: "json", //预期返回的数据类型,如果是json格式，在接收到返回值时会自动封装成json对象
+            //请求成功时
+            success: function (data) { //data是形参，代表的是返回数据
+
+                //Dom操作
+                //遍历返回的数据数组
+                $("#select").prepend("<option>请选择</option>");
+                for (var i = 0; i < data.length; i++) {
+                    var tr = $("<tr></tr>");
+                    //得到数组中每一个元素
+                    $("#select").append("<option>" + data[i].category + "</option>");
+                }
+            }
+        })
+    }
+
+    function fileSelected() {
+        var file = document.getElementById('fileToUpload').files[0];
+        if (file) {
+            var fileSize = 0;
+            if (file.size > 1024 * 1024)
+                fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() + 'MB';
+            else
+                fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
+
+            document.getElementById('fileName').innerHTML = 'Name: ' + file.name;
+            document.getElementById('fileSize').innerHTML = 'Size: ' + fileSize;
+            document.getElementById('fileType').innerHTML = 'Type: ' + file.type;
+        }
+    }
+
+    function postData() {
+        var formData = new FormData();
+        var type = $("#category").val();
+        if (type == null || type == "") {
+            alert("请输入类型！！");
+            return;
+        }
+        formData.append("file", $("#fileToUpload")[0].files[0]); //[0]
+        formData.append("service", 'App.Passion.UploadFile');
+        formData.append("uploader", sessionStorage.getItem("id"))
+        formData.append("category", $("#category").val())
+        // formData.append("token",token);
+        $.ajax({
+            url: 'http://localhost:80/files/uploadFile',
+            /*接口域名地址*/
+            type: 'post',
+            data: formData,
+            dataType: 'JSON',
+            cache: false, // 不缓存
+            processData: false, // jQuery不要去处理发送的数据
+            contentType: false, // jQuery不要去设置Content-Type请求头
+            success: function (data) {
+                swal("文件上传成功", "", "success");
+            },
+            error: function () {
+                swal("文件上传失败", "", "error");
+            }
+        })
+    }
+
+    //创建类型
+    $("#create").click(
+        function () {
+            var parameter = $("#newtype").val();
+            $.ajax({
+                type: "get",
+                url: "http://localhost:80/files/SetCategory",
+                data: {
+                    'category': parameter
+                },
+                success: function (data) {
+                    swal("创建成功", "", "success")
+                }
+            })
+        }
+    )
+</script>
+
+</html>

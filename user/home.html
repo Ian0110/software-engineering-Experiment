@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/common.css">
+</head>
+
+<body>
+    <div class="nav">
+        <span class="title">班级管理系统</span>
+        <a href="home.html">首页</a>
+        <a href="oper.html">上传</a>
+        <a href="../login.html">注销</a>
+    </div>
+    <div>
+        <center>
+            <h1>班级文件信息</h1>
+        </center>
+    </div>
+    <div class="find">
+        <input type="text" id="content" placeholder="检索词">
+        <button type="button" id="search">搜索</button>
+        <select id="select">
+            <option value="1">文件名</option>
+            <option value="2">文件类别</option>
+            <option value="3">上传用户</option>
+        </select>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>文件名</th>
+                <th>文件类型</th>
+                <th>文件大小</th>
+                <th>上传用户</th>
+                <th>文件属类</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="tb">
+        </tbody>
+    </table>
+</body>
+
+<script src="https://code.jquery.com/jquery-3.4.1.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript">
+    window.onload = function () {
+        //拦截器
+        var id = sessionStorage.getItem("id");
+        if (id == null || id == "") {
+            alert("未登录，请先返回登陆界面！");
+            window.location.href = "../login.html";
+        }
+        $.ajax({
+            type: "get", //请求方式（带参）
+            url: "http://localhost:80/files/GetAllFileInfo", //请求地址
+            data: { //请求对象，json数据
+                //如果没有参数，则不需要设置
+            },
+            dataType: "json", //预期返回的数据类型,如果是json格式，在接收到返回值时会自动封装成json对象
+            //请求成功时
+            success: function (data) { //data是形参，代表的是返回数据
+
+                //Dom操作
+                //遍历返回的数据数组
+                for (var i = 0; i < data.length; i++) {
+                    var tr = $("<tr></tr>");
+                    //得到数组中每一个元素
+                    var file = data[i];
+                    var fileSize = 0;
+                    if (file.size > 1024 * 1024) {
+                        fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() +
+                            'MB';
+                    } else {
+                        fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
+                    }
+
+                    //创建td元素
+                    var td1 = "<td>" + file.name + "</td>";
+                    var td2 = "<td>" + file.type + "</td>";
+                    var td3 = "<td>" + fileSize + "</td>";
+                    var td4 = "<td>" + file.uploader + "</td>";
+                    var td5 = "<td>" + file.category + "</td>";
+                    tr.append(td1);
+                    tr.append(td2);
+                    tr.append(td3);
+                    tr.append(td4);
+                    tr.append(td5);
+                    var td = $("<td></td>");
+                    td.append('<input class="btn"  type="button"  value="下载">');
+
+                    tr.append(td);
+                    $("#tb").append(tr);
+                }
+            }
+        })
+    }
+    //文件下载
+    $(function () {
+        $("#tb").on("click", "tr>td>.btn", function () {
+            var filename = $(this).parent().parent().children().eq(0).html();
+            var downloadURL = "http://localhost:80/files/downloadFile/" + filename;
+            $.ajax({
+                type: "get",
+                url: downloadURL,
+                // data: JSON.stringify(data),
+                dataType: 'binary',
+                xhrFields: {
+                    responseType: "blob"
+                },
+                contentType: "application/json",
+                success: function (res) {
+                    // res 为二进制流
+                    console.log("成功", res)
+                    let blob = new Blob([res])
+                    let da = document.createElement('a')
+                    da.href = URL.createObjectURL(blob);
+                    da.setAttribute("download", filename);
+                    da.click();
+                    URL.revokeObjectURL(da.href);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    console.log(XMLHttpRequest, status)
+                }
+            });
+
+        })
+    })
+    //文件检索
+    $("#search").click(
+        function () {
+            //清除所有行
+            $(" tr:gt(0)").remove();
+            var a = $("#select option:selected").val();
+            var parameter = $("#content").val();
+            if (a == 1) {
+                $.ajax({
+                    type: "get",
+                    url: "http://localhost:80/files/retrieveByName",
+                    data: {
+                        'name': parameter
+                    },
+                    success: function (data) {
+                        input(data);
+                    },
+                })
+            } else if (a == 2) {
+                $.ajax({
+                    type: "get",
+                    url: "http://localhost:80/files/retrieveByCategory",
+                    data: {
+                        'category': parameter
+                    },
+                    success: function (data) {
+                        input(data);
+                    },
+                })
+            } else if (a == 3) {
+                $.ajax({
+                    type: "get",
+                    url: "http://localhost:80/files/retrieveByUploader",
+                    data: {
+                        'uploader': parameter
+                    },
+                    success: function (data) {
+                        input(data);
+                    },
+                })
+            }
+        }
+    )
+
+    //填表
+    function input(data) {
+        //Dom操作
+        //遍历返回的数据数组
+        for (var i = 0; i < data.length; i++) {
+            var tr = $("<tr></tr>");
+            //得到数组中每一个元素
+            var file = data[i];
+            var fileSize = 0;
+            if (file.size > 1024 * 1024) {
+                fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() + 'MB';
+            } else {
+                fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
+            }
+
+            //创建td元素
+            var td1 = "<td>" + file.name + "</td>";
+            var td2 = "<td>" + file.type + "</td>";
+            var td3 = "<td>" + fileSize + "</td>";
+            var td4 = "<td>" + file.uploader + "</td>";
+            var td5 = "<td>" + file.category + "</td>";
+            tr.append(td1);
+            tr.append(td2);
+            tr.append(td3);
+            tr.append(td4);
+            tr.append(td5);
+            var td = $("<td></td>");
+            td.append('<input class="btn"  type="button"  value="下载">');
+
+            tr.append(td);
+            $("#tb").append(tr);
+        }
+    }
+</script>
+
+</html>

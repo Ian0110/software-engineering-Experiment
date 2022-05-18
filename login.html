@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="css/my.css">
+    <link href="https://cdn.bootcss.com/limonte-sweetalert2/6.6.2/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <title>Login</title>
+</head>
+
+<body>
+    <section>
+
+        <div class="tt  bg-light">
+            <h1><strong>班级管理系统</strong></h1>
+            <p>一个简单的系统</p>
+        </div>
+
+        <!-- 背景颜色 -->
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="box">
+            <!-- 背景圆 -->
+            <div class="circle" style="--x:0"></div>
+            <div class="circle" style="--x:1"></div>
+            <div class="circle" style="--x:2"></div>
+            <div class="circle" style="--x:3"></div>
+            <div class="circle" style="--x:4"></div>
+            <!-- 登录框 -->
+            <div class="container">
+                <div class="form">
+                    <h2>Login</h2>
+                    <form>
+                        <div class="inputBox">
+                            <input id="account" type="text" placeholder="学号">
+                        </div>
+                        <div class="inputBox">
+                            <input id="Pass" type="password" placeholder="密码">
+                        </div>
+                        <div class="inputBox">
+                            <input type="button" class="byn" onClick="login()" value="登录">
+                            <select id="select">
+                                <option value="user">用户</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+<script type="text/javascript">
+    window.load = function () {
+        sessionStorage.setItem("id", "");
+    }
+
+    function login() {
+        sessionStorage.setItem("id", $("#account").val());
+        var ident = $("#select option:selected").val();
+        var Url = "http://localhost:80/users/login";
+        $.ajax({
+            url: Url,
+            type: "get",
+            data: {
+                id: $("#account").val(),
+                pswd: $("#Pass").val(),
+                identity: $("#select option:selected").val()
+            },
+            success: function (data) {
+                if (data.length == 0) {
+                    swal("用户名或密码错误，请重新输入！", "", "error");
+                } else if (data[0].identity == "user" && ident == "user") {
+                    window.location.href = "user/home.html";
+                } else if (data[0].identity == "admin" && ident == "admin") {
+                    window.location.href = "admin/home.html";
+                } else {
+                    swal("用户名或密码错误，请重新输入！", "", "error");
+                }
+            },
+            error: function () {
+                swal("用户名或密码错误，请重新输入！", "", "error");
+            }
+        })
+    }
+</script>
+
+</html>
